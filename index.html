@@ -10,7 +10,6 @@ body {
     margin: 0;
     font-family: Arial, Helvetica, sans-serif;
     background: #0f3b1d;
-    color: white;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -46,24 +45,28 @@ video {
 }
 
 button {
-    position: absolute;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
     background: red;
     color: white;
     border: none;
     border-radius: 30px;
-    padding: 15px 40px;
+    padding: 14px 36px;
     font-size: 18px;
+    cursor: pointer;
+}
+
+.center-btn {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .overlay {
     position: absolute;
-    top: 80px;
+    top: 200px;
     width: 100%;
     text-align: center;
-    font-size: 28px;
+    font-size: 36px;
     font-weight: bold;
 }
 
@@ -85,6 +88,7 @@ button {
 
 #passwordScreen {
     background: #222;
+    color: white;
     padding: 20px;
     text-align: center;
 }
@@ -94,6 +98,15 @@ input {
     font-size: 16px;
     width: 80%;
     margin-top: 20px;
+}
+
+.end-buttons {
+    position: absolute;
+    bottom: 60px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
 }
 </style>
 </head>
@@ -113,7 +126,7 @@ input {
 <div id="startScreen" class="screen">
     <header></header>
     <video id="preview" autoplay muted playsinline></video>
-    <button onclick="startCountdown()">Start</button>
+    <button class="center-btn" onclick="startCountdown()">Start</button>
     <footer></footer>
 </div>
 
@@ -123,19 +136,23 @@ input {
     <video id="recording" autoplay muted playsinline></video>
 
     <div class="badges">
-        <div class="badge">💨 5</div>
+        <div class="badge">💨 <span id="fartCount">0</span></div>
         <div class="badge" id="timeLeft">00:15</div>
     </div>
 
     <div class="overlay" id="countdownText"></div>
-    <button onclick="stopRecording()">Stop</button>
+    <button class="center-btn" onclick="stopRecording()">Stop</button>
     <footer class="red"></footer>
 </div>
 
 <!-- END -->
 <div id="endScreen" class="screen">
     <video id="playback" controls></video>
-    <button onclick="downloadVideo()">Download</button>
+
+    <div class="end-buttons">
+        <button onclick="downloadVideo()">Download</button>
+        <button onclick="restart()">Restart</button>
+    </div>
 </div>
 
 <script>
@@ -144,27 +161,26 @@ let chunks = [];
 let detecting = false;
 let duration = 15;
 let timer;
+let fartCounter = 0;
+let lastFartTime = 0;
 
 /* ---------- PASSWORD ---------- */
-function checkPassword() {
-    if (document.getElementById("passwordInput").value === "jagfes") {
+async function checkPassword() {
+    if (passwordInput.value === "jagfes") {
         showScreen(startScreen);
-        initMedia();
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        preview.srcObject = stream;
     } else {
         alert("Wrong password");
     }
 }
 
-/* ---------- MEDIA ---------- */
-async function initMedia() {
-    stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    preview.srcObject = stream;
-}
-
-/* ---------- COUNTDOWN BEFORE START ---------- */
+/* ---------- COUNTDOWN ---------- */
 function startCountdown() {
     showScreen(duringScreen);
     recording.srcObject = stream;
+    fartCounter = 0;
+    fartCount.textContent = "0";
 
     let count = 3;
     countdownText.textContent = count;
@@ -184,18 +200,22 @@ function startCountdown() {
 
 /* ---------- RECORDING ---------- */
 function startRecording() {
-    mediaRecorder = new MediaRecorder(stream);
-    mediaRecorder.start();
     chunks = [];
+
+    mediaRecorder = new MediaRecorder(stream, {
+        mimeType: "video/webm;codecs=vp8,opus"
+    });
+
+    mediaRecorder.start();
 
     mediaRecorder.ondataavailable = e => chunks.push(e.data);
     mediaRecorder.onstop = saveVideo;
 
-    startAudioDetection();
     startTimer();
+    startAudioDetection();
 }
 
-/* ---------- LOW SENSITIVITY FART DETECTOR ---------- */
+/* ---------- LOW SENSITIVITY DETECTION ---------- */
 function startAudioDetection() {
     audioContext = new AudioContext();
     analyser = audioContext.createAnalyser();
@@ -203,17 +223,21 @@ function startAudioDetection() {
     mic.connect(analyser);
 
     const data = new Uint8Array(analyser.frequencyBinCount);
-
     detecting = true;
+
     function detect() {
         if (!detecting) return;
-        analyser.getByteFrequencyData(data);
 
+        analyser.getByteFrequencyData(data);
         let volume = data.reduce((a, b) => a + b) / data.length;
 
-        // 🔧 LOW SENSITIVITY THRESHOLD (increase = stricter)
-        if (volume > 85) {
-            console.log("FART DETECTED 💨");
+        const now = Date.now();
+
+        // 🔧 VERY LOW SENSITIVITY (raise number = harder)
+        if (volume > 90 && now - lastFartTime > 1500) {
+            fartCounter++;
+            fartCount.textContent = fartCounter;
+            lastFartTime = now;
         }
 
         requestAnimationFrame(detect);
@@ -224,7 +248,8 @@ function startAudioDetection() {
 /* ---------- TIMER ---------- */
 function startTimer() {
     let time = duration;
-    timeLeft.textContent = `00:${time}`;
+    timeLeft.textContent = "00:15";
+
     timer = setInterval(() => {
         time--;
         timeLeft.textContent = `00:${time < 10 ? "0" + time : time}`;
@@ -233,6 +258,7 @@ function startTimer() {
 }
 
 function stopRecording() {
+    if (!mediaRecorder || mediaRecorder.state !== "recording") return;
     detecting = false;
     clearInterval(timer);
     mediaRecorder.stop();
@@ -240,7 +266,7 @@ function stopRecording() {
 
 /* ---------- SAVE ---------- */
 function saveVideo() {
-    const blob = new Blob(chunks, { type: "video/webm" });
+    const blob = new Blob(chunks, { type: "video/mp4" });
     playback.src = URL.createObjectURL(blob);
     playback.blob = blob;
     showScreen(endScreen);
@@ -249,8 +275,15 @@ function saveVideo() {
 function downloadVideo() {
     const a = document.createElement("a");
     a.href = playback.src;
-    a.download = "fisbollen.webm";
+    a.download = "fisbollen.mp4";
     a.click();
+}
+
+/* ---------- RESTART ---------- */
+function restart() {
+    playback.pause();
+    playback.src = "";
+    showScreen(startScreen);
 }
 
 /* ---------- UI ---------- */
