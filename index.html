@@ -3,222 +3,250 @@
 <head>
 <meta charset="UTF-8">
 <title>Fisbollen</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <style>
-body {
+* {
     margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    background: #0f3b1d;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.screen {
-    width: 320px;
-    height: 600px;
-    background: #cfcfcf;
-    position: relative;
-    display: none;
+html, body {
+    width: 100%;
+    height: 100%;
+    background: black;
+    font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;
     overflow: hidden;
+}
+
+/* APP */
+.app {
+    position: fixed;
+    inset: 0;
+    background: black;
+}
+
+/* SCREENS */
+.screen {
+    position: absolute;
+    inset: 0;
+    display: none;
 }
 
 .screen.active {
     display: block;
 }
 
-header, footer {
-    height: 60px;
+/* TOP BAR */
+.topbar {
+    height: 80px;
+    background: black;
+    padding-top: env(safe-area-inset-top);
+}
+
+.topbar.red {
+    background: red;
+}
+
+/* VIDEO */
+video {
+    width: 100%;
+    height: calc(100% - 200px);
+    object-fit: cover;
     background: black;
 }
 
-header.red, footer.red {
-    background: red;
-}
-
-video {
-    width: 100%;
-    height: calc(100% - 120px);
-    object-fit: cover;
-}
-
-button {
-    background: red;
-    color: white;
-    border: none;
-    border-radius: 30px;
-    padding: 14px 36px;
-    font-size: 18px;
-    cursor: pointer;
-}
-
-.center-btn {
-    position: absolute;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
+/* OVERLAY COUNTERS */
 .overlay {
     position: absolute;
-    top: 200px;
-    width: 100%;
-    text-align: center;
-    font-size: 36px;
-    font-weight: bold;
-}
-
-.badges {
-    position: absolute;
-    top: 70px;
-    right: 10px;
-    display: flex;
-    gap: 8px;
-}
-
-.badge {
-    background: #999;
-    color: white;
-    padding: 6px 10px;
-    border-radius: 12px;
-    font-size: 14px;
-}
-
-#passwordScreen {
-    background: #222;
-    color: white;
-    padding: 20px;
-    text-align: center;
-}
-
-input {
-    padding: 10px;
-    font-size: 16px;
-    width: 80%;
-    margin-top: 20px;
-}
-
-.end-buttons {
-    position: absolute;
-    bottom: 60px;
+    top: 120px;
     width: 100%;
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
+    z-index: 10;
+}
+
+.overlay div {
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* COUNTDOWN */
+.countdown {
+    position: absolute;
+    top: 45%;
+    width: 100%;
+    text-align: center;
+    font-size: 48px;
+    font-weight: 800;
+    color: white;
+}
+
+/* BUTTON */
+.big-btn {
+    position: absolute;
+    bottom: env(safe-area-inset-bottom, 30px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    color: black;
+    font-size: 28px;
+    font-weight: 800;
+    border-radius: 999px;
+    padding: 18px 70px;
+    border: none;
+}
+
+.big-btn.red {
+    background: red;
+    color: white;
+}
+
+/* PASSWORD */
+#passwordScreen {
+    background: black;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#passwordScreen input {
+    padding: 14px;
+    font-size: 18px;
+    border-radius: 10px;
+    border: none;
+    margin: 16px 0;
+    width: 70%;
+}
+
+/* END BUTTONS */
+.end-buttons {
+    position: absolute;
+    bottom: env(safe-area-inset-bottom, 30px);
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 14px;
 }
 </style>
 </head>
 
 <body>
+<div class="app">
 
 <!-- PASSWORD -->
 <div id="passwordScreen" class="screen active">
-    <h2>Fisbollen</h2>
-    <p>Enter password</p>
+    <h1>Fisbollen</h1>
     <input id="passwordInput" type="password" placeholder="Password">
-    <br><br>
-    <button onclick="checkPassword()">Enter</button>
+    <button class="big-btn" onclick="checkPassword()">START</button>
 </div>
 
 <!-- START -->
 <div id="startScreen" class="screen">
-    <header></header>
+    <div class="topbar"></div>
     <video id="preview" autoplay muted playsinline></video>
-    <button class="center-btn" onclick="startCountdown()">Start</button>
-    <footer></footer>
+    <button class="big-btn" onclick="startCountdown()">START</button>
 </div>
 
 <!-- DURING -->
 <div id="duringScreen" class="screen">
-    <header class="red"></header>
+    <div class="topbar red"></div>
+
     <video id="recording" autoplay muted playsinline></video>
 
-    <div class="badges">
-        <div class="badge">💨 <span id="fartCount">0</span></div>
-        <div class="badge" id="timeLeft">00:15</div>
+    <div class="overlay">
+        <div>💨 <span id="fartCount">0</span></div>
+        <div id="timeLeft">00:10</div>
     </div>
 
-    <div class="overlay" id="countdownText"></div>
-    <button class="center-btn" onclick="stopRecording()">Stop</button>
-    <footer class="red"></footer>
+    <div class="countdown" id="countdownText"></div>
+
+    <button class="big-btn red" onclick="stopRecording()">STOP</button>
 </div>
 
 <!-- END -->
 <div id="endScreen" class="screen">
-    <video id="playback" controls></video>
-
+    <video id="playback" controls playsinline></video>
     <div class="end-buttons">
-        <button onclick="downloadVideo()">Download</button>
-        <button onclick="restart()">Restart</button>
+        <button class="big-btn red" onclick="downloadVideo()">SAVE</button>
+        <button class="big-btn" onclick="restart()">RETRY</button>
     </div>
+</div>
+
 </div>
 
 <script>
 let stream, mediaRecorder, audioContext, analyser;
 let chunks = [];
-let detecting = false;
-let duration = 15;
-let timer;
 let fartCounter = 0;
 let lastFartTime = 0;
+let detecting = false;
+let timer;
+const duration = 10;
 
-/* ---------- PASSWORD ---------- */
+/* PASSWORD */
 async function checkPassword() {
-    if (passwordInput.value === "jagfes") {
-        showScreen(startScreen);
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        preview.srcObject = stream;
-    } else {
-        alert("Wrong password");
-    }
+    if (passwordInput.value !== "jagfes") return alert("Wrong password");
+    stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: true
+    });
+    preview.srcObject = stream;
+    showScreen(startScreen);
 }
 
-/* ---------- COUNTDOWN ---------- */
+/* COUNTDOWN */
 function startCountdown() {
     showScreen(duringScreen);
     recording.srcObject = stream;
     fartCounter = 0;
     fartCount.textContent = "0";
 
-    let count = 3;
-    countdownText.textContent = count;
+    let c = 3;
+    countdownText.textContent = c;
 
-    const interval = setInterval(() => {
-        count--;
-        if (count > 0) {
-            countdownText.textContent = count;
-        } else {
-            clearInterval(interval);
-            countdownText.textContent = "GO!";
+    const i = setInterval(() => {
+        c--;
+        if (c > 0) countdownText.textContent = c;
+        else {
+            clearInterval(i);
+            countdownText.textContent = "GO";
             setTimeout(() => countdownText.textContent = "", 500);
             startRecording();
         }
     }, 1000);
 }
 
-/* ---------- RECORDING ---------- */
+/* RECORD */
 function startRecording() {
     chunks = [];
-
-    mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "video/webm;codecs=vp8,opus"
-    });
-
+    mediaRecorder = new MediaRecorder(stream);
     mediaRecorder.start();
-
     mediaRecorder.ondataavailable = e => chunks.push(e.data);
     mediaRecorder.onstop = saveVideo;
 
     startTimer();
-    startAudioDetection();
+    startDetection();
 }
 
-/* ---------- LOW SENSITIVITY DETECTION ---------- */
-function startAudioDetection() {
+/* MULTI FART DETECTION */
+function startDetection() {
     audioContext = new AudioContext();
     analyser = audioContext.createAnalyser();
+    analyser.fftSize = 512;
+
     const mic = audioContext.createMediaStreamSource(stream);
     mic.connect(analyser);
 
@@ -227,14 +255,13 @@ function startAudioDetection() {
 
     function detect() {
         if (!detecting) return;
-
         analyser.getByteFrequencyData(data);
-        let volume = data.reduce((a, b) => a + b) / data.length;
 
+        let volume = data.reduce((a,b)=>a+b) / data.length;
         const now = Date.now();
 
-        // 🔧 VERY LOW SENSITIVITY (raise number = harder)
-        if (volume > 90 && now - lastFartTime > 1500) {
+        // 🔧 tuned for multiple obvious farts
+        if (volume > 75 && now - lastFartTime > 500) {
             fartCounter++;
             fartCount.textContent = fartCounter;
             lastFartTime = now;
@@ -245,15 +272,14 @@ function startAudioDetection() {
     detect();
 }
 
-/* ---------- TIMER ---------- */
+/* TIMER */
 function startTimer() {
-    let time = duration;
-    timeLeft.textContent = "00:15";
-
+    let t = duration;
+    timeLeft.textContent = "00:10";
     timer = setInterval(() => {
-        time--;
-        timeLeft.textContent = `00:${time < 10 ? "0" + time : time}`;
-        if (time <= 0) stopRecording();
+        t--;
+        timeLeft.textContent = `00:${t < 10 ? "0"+t : t}`;
+        if (t <= 0) stopRecording();
     }, 1000);
 }
 
@@ -264,11 +290,10 @@ function stopRecording() {
     mediaRecorder.stop();
 }
 
-/* ---------- SAVE ---------- */
+/* SAVE */
 function saveVideo() {
     const blob = new Blob(chunks, { type: "video/mp4" });
     playback.src = URL.createObjectURL(blob);
-    playback.blob = blob;
     showScreen(endScreen);
 }
 
@@ -279,19 +304,17 @@ function downloadVideo() {
     a.click();
 }
 
-/* ---------- RESTART ---------- */
+/* RESTART */
 function restart() {
-    playback.pause();
     playback.src = "";
     showScreen(startScreen);
 }
 
-/* ---------- UI ---------- */
-function showScreen(screen) {
-    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-    screen.classList.add("active");
+/* UI */
+function showScreen(s) {
+    document.querySelectorAll(".screen").forEach(x => x.classList.remove("active"));
+    s.classList.add("active");
 }
 </script>
-
 </body>
 </html>
